@@ -6,6 +6,7 @@ import (
 	"github.com/algorand/go-algorand-sdk/v2/mnemonic"
 	"github.com/algorand/go-algorand-sdk/v2/types"
 	"strings"
+	"sync"
 )
 
 const walletDriverName = "sqlite"
@@ -53,8 +54,19 @@ type WalletManager interface {
 	// were created up to that point. Thus, even if an error is returned, check if any addresses were created.
 	CreateAccounts(name, password string, count uint) (addresses []string, err error)
 
-	// DeleteAccount deletes the specified address located within the specified wallet
+	// DeleteAccount deletes the specified address located within the specified wallet.
+	//
+	// It's ok to try to delete an account that does exist, i.e., no error is returned
 	DeleteAccount(name, password, address string) error
+
+	// DeleteAccounts deletes the specified list accounts for the specified wallet.
+	//
+	// - At least 1 account address to delete must be specified.
+	//
+	// Any errors that occur while deleting an account are returned in the map.
+	// If there is no entry for the address in the returned map, then it means the account was successfully deleted.
+	// If all deletes completed successfully, then nil will be returned.
+	DeleteAccounts(name, password string, addresses ...string) (deleteErrors map[string]error, err error)
 }
 
 // KMD based implementation for WalletManager
@@ -323,4 +335,47 @@ func (walletManager *kmdWalletManager) DeleteAccount(name, password, address str
 
 	_, err = walletManager.kmdClient.DeleteKey(walletHandle, password, address)
 	return err
+}
+
+func (walletManager *kmdWalletManager) DeleteAccounts(name, password string, addresses ...string) (deleteErrors map[string]error, err error) {
+	if len(addresses) == 0 {
+		return nil, errors.New("at least 1 account to delete must be specified")
+	}
+
+	name, password, err = trimNamePassword(name, password)
+	if err != nil {
+		return nil, err
+	}
+
+	walletHandle, err := walletManager.walletHandle(name, password)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_, err = walletManager.kmdClient.ReleaseWalletHandle(walletHandle)
+	}()
+
+	deleteErrors = make(map[string]error)
+	lock := sync.Mutex{}
+	wg := sync.WaitGroup{}
+	wg.Add(len(addresses))
+
+	for _, address := range addresses {
+		go func(address string) {
+			defer wg.Done()
+			_, err = walletManager.kmdClient.DeleteKey(walletHandle, password, address)
+			if err != nil {
+				lock.Lock()
+				deleteErrors[address] = err
+				lock.Unlock()
+			}
+		}(address)
+	}
+
+	wg.Wait()
+
+	if len(deleteErrors) == 0 {
+		return nil, nil
+	}
+	return
 }

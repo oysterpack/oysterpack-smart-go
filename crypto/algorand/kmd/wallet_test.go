@@ -1,6 +1,7 @@
 package kmd_test
 
 import (
+	"github.com/algorand/go-algorand-sdk/v2/crypto"
 	"github.com/oklog/ulid/v2"
 	"github.com/oysterpack/oysterpack-smart-go/crypto/algorand/kmd"
 	"github.com/oysterpack/oysterpack-smart-go/crypto/algorand/kmd/test"
@@ -324,33 +325,44 @@ func TestDeleteAccount(t *testing.T) {
 	name := ulid.Make().String()
 	password := ulid.Make().String()
 
-	_, err := walletManager.Create(name, password)
-	if err != nil {
-		t.Error("Failed to create new wallet", err)
-	}
+	t.Run("delete account that exists", func(t *testing.T) {
+		_, err := walletManager.Create(name, password)
+		if err != nil {
+			t.Error("Failed to create new wallet", err)
+		}
 
-	address, err := walletManager.CreateAccount(name, password)
-	if err != nil {
-		t.Error("Failed to create account", err)
-	}
+		address, err := walletManager.CreateAccount(name, password)
+		if err != nil {
+			t.Error("Failed to create account", err)
+		}
 
-	accountExists, err := walletManager.ContainsAccount(name, password, address)
-	if err != nil {
-		t.Error("Failed to check for account existence", err)
-	}
-	if !accountExists {
-		t.Error("Account should exist")
-	}
+		accountExists, err := walletManager.ContainsAccount(name, password, address)
+		if err != nil {
+			t.Error("Error occurred while checking if account exists", err)
+		}
+		if !accountExists {
+			t.Error("Account should exist")
+		}
 
-	if err := walletManager.DeleteAccount(name, password, address); err != nil {
-		t.Error("Failed to delete account")
-	}
-	accountExists, err = walletManager.ContainsAccount(name, password, address)
-	if err != nil {
-		t.Error("Failed to check for account existence", err)
-	}
-	if accountExists {
-		t.Error("Account should not exist")
-	}
+		if err := walletManager.DeleteAccount(name, password, address); err != nil {
+			t.Error("Failed to delete account")
+		}
+		accountExists, err = walletManager.ContainsAccount(name, password, address)
+		if err != nil {
+			t.Error("Failed to check for account existence", err)
+		}
+		if accountExists {
+			t.Error("Account should not exist")
+		}
+	})
+
+	t.Run("delete account that does not exist", func(t *testing.T) {
+		account := crypto.GenerateAccount()
+		err := walletManager.DeleteAccount(name, password, account.Address.String())
+		if err != nil {
+			t.Error("delete failed", err)
+		}
+
+	})
 
 }
