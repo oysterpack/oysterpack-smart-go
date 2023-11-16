@@ -5,11 +5,11 @@ import (
 	"github.com/oysterpack/oysterpack-smart-go/crypto/algorand/kmd"
 	"github.com/oysterpack/oysterpack-smart-go/crypto/algorand/kmd/test"
 	"sort"
+	"strings"
 	"testing"
 )
 
 func TestListWallets(t *testing.T) {
-	// Setup
 	kmdClient := test.LocalnetKMDClient(t)
 
 	// Get list of wallets from the KMD service directly
@@ -56,7 +56,6 @@ func TestListWallets(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	// Setup
 	kmdClient := test.LocalnetKMDClient(t)
 	walletManager := kmd.New(kmdClient)
 
@@ -171,4 +170,78 @@ func TestCreate(t *testing.T) {
 			t.Errorf("Wallet does not exist: %#v", wallet)
 		}()
 	})
+}
+
+func TestExportBackupPhrase(t *testing.T) {
+	kmdClient := test.LocalnetKMDClient(t)
+	walletManager := kmd.New(kmdClient)
+
+	name := ulid.Make().String()
+	password := ulid.Make().String()
+
+	t.Run("export backup phrase for existing wallet", func(t *testing.T) {
+		_, err := walletManager.Create(name, password)
+		if err != nil {
+			t.Error("Failed to create new wallet", err)
+		}
+		backupPhrase, err := walletManager.ExportBackupPhrase(name, password)
+		if err != nil {
+			t.Error("Failed to export backup phrase", err)
+		}
+		t.Log("backup phrase: ", backupPhrase)
+	})
+
+	t.Run("export backup phrase for wallet that does not exist", func(t *testing.T) {
+		name := ulid.Make().String()
+		_, err := walletManager.ExportBackupPhrase(name, password)
+		if err == nil {
+			t.Error("Test should have failed because the wallet does not exist")
+		}
+		t.Log(err)
+		if err.Error() != "wallet does not exist" {
+			t.Error("invalid error message")
+		}
+	})
+
+	t.Run("export backup phrase using invalid password", func(t *testing.T) {
+		password := ulid.Make().String()
+		_, err := walletManager.ExportBackupPhrase(name, password)
+		if err == nil {
+			t.Error("Test should have failed because the wallet password is invalid")
+		}
+		t.Log(err)
+
+		if !strings.Contains(err.Error(), "wrong password") {
+			t.Error("invalid error message")
+		}
+	})
+}
+
+func TestRecover(t *testing.T) {
+	kmdClient := test.LocalnetKMDClient(t)
+	walletManager := kmd.New(kmdClient)
+
+	name := ulid.Make().String()
+	password := ulid.Make().String()
+
+	wallet1, err := walletManager.Create(name, password)
+	if err != nil {
+		t.Error("Failed to create new wallet", err)
+	}
+	backupPhrase, err := walletManager.ExportBackupPhrase(name, password)
+	if err != nil {
+		t.Error("Failed to export backup phrase", err)
+	}
+
+	wallet2Name := name + "-2"
+	wallet2, err := walletManager.Recover(wallet2Name, password, backupPhrase)
+	if err != nil {
+		t.Error("Failed to recover wallet", err)
+	}
+	if wallet2.Id == wallet1.Id {
+		t.Error("Recovered wallet should have a unique ID")
+	}
+	if wallet2.Name != wallet2Name {
+		t.Error("Wallet name does not match")
+	}
 }
