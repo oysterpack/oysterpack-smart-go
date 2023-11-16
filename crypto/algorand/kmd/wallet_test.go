@@ -245,3 +245,68 @@ func TestRecover(t *testing.T) {
 		t.Error("Wallet name does not match")
 	}
 }
+
+func TestCreateAccount(t *testing.T) {
+	kmdClient := test.LocalnetKMDClient(t)
+	walletManager := kmd.New(kmdClient)
+
+	name := ulid.Make().String()
+	password := ulid.Make().String()
+
+	_, err := walletManager.Create(name, password)
+	if err != nil {
+		t.Error("Failed to create new wallet", err)
+	}
+	accounts, err := walletManager.ListAccounts(name, password)
+	if err != nil {
+		t.Error("Failed to list wallet accounts", err)
+	}
+	if len(accounts) > 0 {
+		t.Error("Wallet should have no accounts")
+	}
+
+	account, err := walletManager.CreateAccount(name, password)
+	if err != nil {
+		t.Error("Failed to create wallet account", err)
+	}
+	t.Log(account)
+
+	accounts, err = walletManager.ListAccounts(name, password)
+	if err != nil {
+		t.Error("Failed to list wallet accounts", err)
+	}
+	if len(accounts) != 1 {
+		t.Error("Wallet should have 1 account")
+	}
+	if accounts[0] != account {
+		t.Error("Account does not match")
+	}
+}
+
+func TestCreateAccounts(t *testing.T) {
+	kmdClient := test.LocalnetKMDClient(t)
+	walletManager := kmd.New(kmdClient)
+
+	name := ulid.Make().String()
+	password := ulid.Make().String()
+
+	_, err := walletManager.Create(name, password)
+	if err != nil {
+		t.Error("Failed to create new wallet", err)
+	}
+
+	_, err = walletManager.CreateAccounts(name, password, 0)
+	if err == nil {
+		t.Error("Expected an error because count=0 was passed in")
+	}
+
+	var count uint = 3
+	addresses, err := walletManager.CreateAccounts(name, password, count)
+	if err != nil {
+		t.Error("Failed to create accounts", err)
+	}
+	t.Log(addresses)
+	if len(addresses) != int(count) {
+		t.Errorf("Expected number of accounts was %v but the actual number was %v", count, len(addresses))
+	}
+}
