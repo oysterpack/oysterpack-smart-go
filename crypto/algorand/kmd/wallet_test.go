@@ -325,12 +325,12 @@ func TestDeleteAccount(t *testing.T) {
 	name := ulid.Make().String()
 	password := ulid.Make().String()
 
-	t.Run("delete account that exists", func(t *testing.T) {
-		_, err := walletManager.Create(name, password)
-		if err != nil {
-			t.Error("Failed to create new wallet", err)
-		}
+	_, err := walletManager.Create(name, password)
+	if err != nil {
+		t.Error("Failed to create new wallet", err)
+	}
 
+	t.Run("delete account that exists", func(t *testing.T) {
 		address, err := walletManager.CreateAccount(name, password)
 		if err != nil {
 			t.Error("Failed to create account", err)
@@ -365,4 +365,90 @@ func TestDeleteAccount(t *testing.T) {
 
 	})
 
+}
+
+func TestDeleteAccounts(t *testing.T) {
+	kmdClient := test.LocalnetKMDClient(t)
+	walletManager := kmd.New(kmdClient)
+
+	name := ulid.Make().String()
+	password := ulid.Make().String()
+
+	_, err := walletManager.Create(name, password)
+	if err != nil {
+		t.Error("Failed to create new wallet", err)
+	}
+
+	t.Run("Delete accounts that exist", func(t *testing.T) {
+		const count = 2
+		accounts := make([]string, count)
+		for i := 0; i < count; i++ {
+			address, err := walletManager.CreateAccount(name, password)
+			if err != nil {
+				t.Error("Failed to create account", err)
+			}
+			accounts[i] = address
+		}
+		deleteErrors, err := walletManager.DeleteAccounts(name, password, accounts...)
+		if err != nil {
+			t.Error("Failed to delete accounts", err)
+		}
+		if len(deleteErrors) > 0 {
+			t.Error("There should no errors")
+		}
+		for _, account := range accounts {
+			exists, err := walletManager.ContainsAccount(name, password, account)
+			if err != nil {
+				t.Error("Failed to check for account existence", err)
+			}
+			if exists {
+				t.Error("account was not deleted", account)
+			}
+		}
+
+	})
+
+	t.Run("Delete accounts that exist and don't exist", func(t *testing.T) {
+		const count = 2
+		accounts := make([]string, count)
+		address, err := walletManager.CreateAccount(name, password)
+		if err != nil {
+			t.Error("Failed to create account", err)
+		}
+		accounts[0] = address                                   // existent account
+		accounts[1] = crypto.GenerateAccount().Address.String() // non-existent account
+		deleteErrors, err := walletManager.DeleteAccounts(name, password, accounts...)
+		if err != nil {
+			t.Error("Failed to delete accounts", err)
+		}
+		if len(deleteErrors) > 0 {
+			t.Error("There should no errors")
+		}
+		for _, account := range accounts {
+			exists, err := walletManager.ContainsAccount(name, password, account)
+			if err != nil {
+				t.Error("Failed to check for account existence", err)
+			}
+			if exists {
+				t.Error("account was not deleted", account)
+			}
+		}
+
+	})
+
+	t.Run("Delete accounts that do not exist", func(t *testing.T) {
+		const count = 3
+		accounts := make([]string, count)
+		for i := 0; i < count; i++ {
+			accounts[i] = crypto.GenerateAccount().Address.String()
+		}
+
+		deleteErrors, err := walletManager.DeleteAccounts(name, password, accounts...)
+		if err != nil {
+			t.Error("Failed to delete accounts", err)
+		}
+		if len(deleteErrors) > 0 {
+			t.Error("There should no errors")
+		}
+	})
 }
