@@ -1,7 +1,7 @@
 package kmd
 
 import (
-	"github.com/oysterpack/oysterpack-smart-go/algorand/model"
+	"github.com/oysterpack/oysterpack-smart-go/crypto/algorand/model"
 )
 
 type Rekeying interface {

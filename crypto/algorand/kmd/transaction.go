@@ -3,7 +3,7 @@ package kmd
 import (
 	"github.com/algorand/go-algorand-sdk/v2/client/kmd"
 	"github.com/algorand/go-algorand-sdk/v2/transaction"
-	"github.com/oysterpack/oysterpack-smart-go/algorand/model"
+	"github.com/oysterpack/oysterpack-smart-go/crypto/algorand/model"
 )
 
 // KMD wallet ID

@@ -1,8 +1,9 @@
 package kmd_test
 
 import (
-	"github.com/oysterpack/oysterpack-smart-go/algorand/kmd"
-	"github.com/oysterpack/oysterpack-smart-go/algorand/kmd/test"
+	"github.com/oklog/ulid/v2"
+	"github.com/oysterpack/oysterpack-smart-go/crypto/algorand/kmd"
+	"github.com/oysterpack/oysterpack-smart-go/crypto/algorand/kmd/test"
 	"sort"
 	"testing"
 )
@@ -41,8 +42,8 @@ func TestListWallets(t *testing.T) {
 	sort.Slice(kmdWallets.Wallets, func(i, j int) bool {
 		return kmdWallets.Wallets[i].ID < kmdWallets.Wallets[j].ID
 	})
-	sort.Slice(kmdWallets.Wallets, func(i, j int) bool {
-		return kmdWallets.Wallets[i].ID < kmdWallets.Wallets[j].ID
+	sort.Slice(wallets, func(i, j int) bool {
+		return wallets[i].Id < wallets[j].Id
 	})
 	for i := 0; i < len(wallets); i++ {
 		if wallets[i].Id != kmdWallets.Wallets[i].ID {
@@ -52,4 +53,122 @@ func TestListWallets(t *testing.T) {
 			t.Errorf("Wallet names do not match: %v ! %v", wallets[i].Name, kmdWallets.Wallets[i].Name)
 		}
 	}
+}
+
+func TestCreate(t *testing.T) {
+	// Setup
+	kmdClient := test.LocalnetKMDClient(t)
+	walletManager := kmd.New(kmdClient)
+
+	name := ulid.Make().String()
+	password := ulid.Make().String()
+
+	t.Run("create new wallet", func(t *testing.T) {
+		wallet, err := walletManager.Create(name, password)
+		if err != nil {
+			t.Error("Failed to create new wallet", err)
+		}
+		if wallet.Name != name {
+			t.Error("Wallet name does not match")
+		}
+		wallets, err := walletManager.List()
+		if err != nil {
+			t.Error("Failed to list wallets", err)
+		}
+		func() {
+			for _, w := range wallets {
+				if w == wallet {
+					return
+				}
+			}
+			t.Errorf("Wallet does not exist: %#v", wallet)
+		}()
+	})
+
+	t.Run("create wallet with name that already exists", func(t *testing.T) {
+		wallet, err := walletManager.Create(name, password)
+		if err == nil {
+			t.Error("Wallet creation should have failed")
+		}
+		t.Log(wallet, err)
+		if err.Error() != "wallet with same name already exists" {
+			t.Error("error message did not match")
+		}
+		emptyWallet := kmd.Wallet{}
+		if wallet != emptyWallet {
+			t.Error("wallet should have no fields set")
+		}
+	})
+
+	t.Run("create wallet using blank name", func(t *testing.T) {
+		wallet, err := walletManager.Create(" ", password)
+		if err == nil {
+			t.Error("Wallet creation should have failed")
+		}
+		t.Log(wallet, err)
+		if err.Error() != "name cannot be blank" {
+			t.Error("error message did not match")
+		}
+	})
+
+	t.Run("create wallet using blank password", func(t *testing.T) {
+		wallet, err := walletManager.Create(name, " ")
+		if err == nil {
+			t.Error("Wallet creation should have failed")
+		}
+		t.Log(wallet, err)
+		if err.Error() != "password cannot be blank" {
+			t.Error("error message did not match")
+		}
+	})
+
+	t.Run("create wallet with whitespace padded name", func(t *testing.T) {
+		name := ulid.Make().String()
+		password := ulid.Make().String()
+
+		wallet, err := walletManager.Create("  "+name+"  ", password)
+		if err != nil {
+			t.Error("Failed to create new wallet", err)
+		}
+		if wallet.Name != name {
+			t.Error("Wallet name does not match")
+		}
+		wallets, err := walletManager.List()
+		if err != nil {
+			t.Error("Failed to list wallets", err)
+		}
+		func() {
+			for _, w := range wallets {
+				if w == wallet {
+					return
+				}
+			}
+			t.Errorf("Wallet does not exist: %#v", wallet)
+		}()
+	})
+
+	t.Run("create wallet with whitespace padded password", func(t *testing.T) {
+		name := ulid.Make().String()
+		password := ulid.Make().String()
+
+		wallet, err := walletManager.Create(name, "  "+password+"  ")
+		if err != nil {
+			t.Error("Failed to create new wallet", err)
+		}
+		if wallet.Name != name {
+			t.Error("Wallet name does not match")
+		}
+		wallets, err := walletManager.List()
+		if err != nil {
+			t.Error("Failed to list wallets", err)
+		}
+		func() {
+			for _, w := range wallets {
+				if w == wallet {
+					return
+				}
+			}
+			t.Errorf("Wallet does not exist: %#v", wallet)
+		}()
+	})
 }

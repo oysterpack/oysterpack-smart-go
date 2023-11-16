@@ -1,8 +1,11 @@
 pre-commit: format localnet-reset test
 
 test:
+	cd crypto/algorand/kmd && go test
+
 
 format:
+	cd crypto/algorand/kmd && go fmt
 
 godoc:
 
