@@ -63,6 +63,15 @@ func TestCreate(t *testing.T) {
 	password := ulid.Make().String()
 
 	t.Run("create new wallet", func(t *testing.T) {
+		// Verify that the wallet does not exist
+		containsWallet, err := walletManager.Contains(name)
+		if err != nil {
+			t.Error("Failed to list wallets", err)
+		}
+		if containsWallet {
+			t.Error("Wallet should not exist")
+		}
+
 		wallet, err := walletManager.Create(name, password)
 		if err != nil {
 			t.Error("Failed to create new wallet", err)
@@ -70,18 +79,15 @@ func TestCreate(t *testing.T) {
 		if wallet.Name != name {
 			t.Error("Wallet name does not match")
 		}
-		wallets, err := walletManager.List()
+
+		// Verify that the wallet was created
+		containsWallet, err = walletManager.Contains(name)
 		if err != nil {
 			t.Error("Failed to list wallets", err)
 		}
-		func() {
-			for _, w := range wallets {
-				if w == wallet {
-					return
-				}
-			}
+		if !containsWallet {
 			t.Errorf("Wallet does not exist: %#v", wallet)
-		}()
+		}
 	})
 
 	t.Run("create wallet with name that already exists", func(t *testing.T) {
@@ -309,4 +315,42 @@ func TestCreateAccounts(t *testing.T) {
 	if len(addresses) != int(count) {
 		t.Errorf("Expected number of accounts was %v but the actual number was %v", count, len(addresses))
 	}
+}
+
+func TestDeleteAccount(t *testing.T) {
+	kmdClient := test.LocalnetKMDClient(t)
+	walletManager := kmd.New(kmdClient)
+
+	name := ulid.Make().String()
+	password := ulid.Make().String()
+
+	_, err := walletManager.Create(name, password)
+	if err != nil {
+		t.Error("Failed to create new wallet", err)
+	}
+
+	address, err := walletManager.CreateAccount(name, password)
+	if err != nil {
+		t.Error("Failed to create account", err)
+	}
+
+	accountExists, err := walletManager.ContainsAccount(name, password, address)
+	if err != nil {
+		t.Error("Failed to check for account existence", err)
+	}
+	if !accountExists {
+		t.Error("Account should exist")
+	}
+
+	if err := walletManager.DeleteAccount(name, password, address); err != nil {
+		t.Error("Failed to delete account")
+	}
+	accountExists, err = walletManager.ContainsAccount(name, password, address)
+	if err != nil {
+		t.Error("Failed to check for account existence", err)
+	}
+	if accountExists {
+		t.Error("Account should not exist")
+	}
+
 }

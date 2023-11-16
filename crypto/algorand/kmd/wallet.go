@@ -27,6 +27,9 @@ type WalletManager interface {
 	// If the wallet is not found, then an error is returned
 	Get(name string) (Wallet, error)
 
+	// Contains reports true if the wallet for the specified name exists
+	Contains(name string) (bool, error)
+
 	// Create a new wallet using the specified name and password
 	Create(name, password string) (Wallet, error)
 
@@ -38,6 +41,10 @@ type WalletManager interface {
 	// ListAccounts returns the account addresses for the specified wallet
 	ListAccounts(name, password string) (addresses []string, err error)
 
+	// ContainsAccount is used to check if an address exists within the specified wallet
+	ContainsAccount(name, password, address string) (bool, error)
+
+	// CreateAccount generates a new account within the specified wallet
 	CreateAccount(name, password string) (address string, err error)
 
 	// CreateAccounts will attempt to create the specified number of accounts.
@@ -45,6 +52,9 @@ type WalletManager interface {
 	// If an error occurs while generating accounts, then the error will be returned along with the accounts that
 	// were created up to that point. Thus, even if an error is returned, check if any addresses were created.
 	CreateAccounts(name, password string, count uint) (addresses []string, err error)
+
+	// DeleteAccount deletes the specified address located within the specified wallet
+	DeleteAccount(name, password, address string) error
 }
 
 // KMD based implementation for WalletManager
@@ -73,6 +83,20 @@ func (walletManager *kmdWalletManager) List() ([]Wallet, error) {
 	}
 
 	return wallets, nil
+}
+
+func (walletManager *kmdWalletManager) Contains(name string) (bool, error) {
+	kmdWallets, err := walletManager.kmdClient.ListWallets()
+	if err != nil {
+		return false, err
+	}
+	for _, wallet := range kmdWallets.Wallets {
+		if wallet.Name == name {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 // Create a new Wallet with the specified name and password
@@ -220,6 +244,19 @@ func (walletManager *kmdWalletManager) ListAccounts(name, password string) (addr
 	return listKeysResponse.Addresses, nil
 }
 
+func (walletManager *kmdWalletManager) ContainsAccount(name, password, address string) (bool, error) {
+	walletAddresses, err := walletManager.ListAccounts(name, password)
+	if err != nil {
+		return false, err
+	}
+	for _, walletAddress := range walletAddresses {
+		if walletAddress == address {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (walletManager *kmdWalletManager) CreateAccount(name, password string) (address string, err error) {
 	name, password, err = trimNamePassword(name, password)
 	if err != nil {
@@ -268,4 +305,22 @@ func (walletManager *kmdWalletManager) CreateAccounts(name, password string, cou
 	}
 
 	return addresses, nil
+}
+
+func (walletManager *kmdWalletManager) DeleteAccount(name, password, address string) error {
+	name, password, err := trimNamePassword(name, password)
+	if err != nil {
+		return err
+	}
+
+	walletHandle, err := walletManager.walletHandle(name, password)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_, err = walletManager.kmdClient.ReleaseWalletHandle(walletHandle)
+	}()
+
+	_, err = walletManager.kmdClient.DeleteKey(walletHandle, password, address)
+	return err
 }
