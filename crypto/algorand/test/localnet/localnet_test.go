@@ -1,6 +1,7 @@
 package localnet
 
 import (
+	"context"
 	"github.com/algorand/go-algorand-sdk/v2/client/v2/common/models"
 	"testing"
 )
@@ -21,6 +22,21 @@ func TestGetPrefundedTestAccounts(t *testing.T) {
 			}
 		}
 		prevAccount = &account
+	}
+
+}
+
+func TestIndexerClient(t *testing.T) {
+	client := IndexerClient(t)
+
+	// lookup accounts in the indexer
+	accounts := GetPrefundedTestAccounts(t)
+	for _, account := range accounts {
+		validRound, account, err := client.LookupAccountByID(account.Address).Do(context.Background())
+		if err != nil {
+			t.Error("failed to lookup account")
+		}
+		t.Log(validRound, account.Address, account.Amount)
 	}
 
 }
