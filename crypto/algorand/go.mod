@@ -1,10 +1,8 @@
-module github.com/oysterpack/oysterpack-smart-go/crypto/algorand/kmd
+module github.com/oysterpack/oysterpack-smart-go/crypto/algorand
 
 go 1.21.4
 
 require github.com/algorand/go-algorand-sdk/v2 v2.3.0
-
-require github.com/oysterpack/oysterpack-smart-go/crypto/algorand/model v0.0.0-unpublished
 
 require (
 	github.com/algorand/avm-abi v0.2.0 // indirect
@@ -15,5 +13,3 @@ require (
 	golang.org/x/crypto v0.15.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
 )
-
-replace github.com/oysterpack/oysterpack-smart-go/crypto/algorand/model => ../model
