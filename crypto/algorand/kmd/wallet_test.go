@@ -4,14 +4,14 @@ import (
 	"github.com/algorand/go-algorand-sdk/v2/crypto"
 	"github.com/oklog/ulid/v2"
 	"github.com/oysterpack/oysterpack-smart-go/crypto/algorand/kmd"
-	"github.com/oysterpack/oysterpack-smart-go/crypto/algorand/kmd/test"
+	"github.com/oysterpack/oysterpack-smart-go/crypto/algorand/test/localnet"
 	"sort"
 	"strings"
 	"testing"
 )
 
 func TestListWallets(t *testing.T) {
-	kmdClient := test.LocalnetKMDClient(t)
+	kmdClient := localnet.KmdClient(t)
 
 	// Get list of wallets from the KMD service directly
 	kmdWallets, err := kmdClient.ListWallets()
@@ -58,7 +58,7 @@ func TestListWallets(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	kmdClient := test.LocalnetKMDClient(t)
+	kmdClient := localnet.KmdClient(t)
 	walletManager := kmd.New(kmdClient)
 
 	name := ulid.Make().String()
@@ -188,7 +188,7 @@ func TestCreate(t *testing.T) {
 }
 
 func TestExportBackupPhrase(t *testing.T) {
-	kmdClient := test.LocalnetKMDClient(t)
+	kmdClient := localnet.KmdClient(t)
 	walletManager := kmd.New(kmdClient)
 
 	name := ulid.Make().String()
@@ -235,7 +235,7 @@ func TestExportBackupPhrase(t *testing.T) {
 }
 
 func TestRecover(t *testing.T) {
-	kmdClient := test.LocalnetKMDClient(t)
+	kmdClient := localnet.KmdClient(t)
 	walletManager := kmd.New(kmdClient)
 
 	name := ulid.Make().String()
@@ -267,7 +267,7 @@ func TestRecover(t *testing.T) {
 }
 
 func TestCreateAccount(t *testing.T) {
-	kmdClient := test.LocalnetKMDClient(t)
+	kmdClient := localnet.KmdClient(t)
 	walletManager := kmd.New(kmdClient)
 
 	name := ulid.Make().String()
@@ -308,7 +308,7 @@ func TestCreateAccount(t *testing.T) {
 }
 
 func TestCreateAccounts(t *testing.T) {
-	kmdClient := test.LocalnetKMDClient(t)
+	kmdClient := localnet.KmdClient(t)
 	walletManager := kmd.New(kmdClient)
 
 	name := ulid.Make().String()
@@ -338,7 +338,7 @@ func TestCreateAccounts(t *testing.T) {
 }
 
 func TestDeleteAccount(t *testing.T) {
-	kmdClient := test.LocalnetKMDClient(t)
+	kmdClient := localnet.KmdClient(t)
 	walletManager := kmd.New(kmdClient)
 
 	name := ulid.Make().String()
@@ -392,7 +392,7 @@ func TestDeleteAccount(t *testing.T) {
 }
 
 func TestDeleteAccounts(t *testing.T) {
-	kmdClient := test.LocalnetKMDClient(t)
+	kmdClient := localnet.KmdClient(t)
 	walletManager := kmd.New(kmdClient)
 
 	name := ulid.Make().String()
@@ -485,7 +485,7 @@ func TestDeleteAccounts(t *testing.T) {
 }
 
 func TestExportPrivateKey(t *testing.T) {
-	kmdClient := test.LocalnetKMDClient(t)
+	kmdClient := localnet.KmdClient(t)
 	walletManager := kmd.New(kmdClient)
 
 	name := ulid.Make().String()

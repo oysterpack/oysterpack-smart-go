@@ -2,12 +2,13 @@ pre-commit: format localnet-reset test
 
 test:
 	cd crypto/algorand/kmd && go test
-
+	cd crypto/algorand/test/localnet && go test
 
 format:
 	cd crypto/algorand/kmd && go fmt
 
 godoc:
+	 cd crypto/algorand && godoc -http :6060 -index
 
 # algorand node commands depend on the $ALGORAND_DATA env var
 # if not set, then it defaults to /var/lib/algorand
