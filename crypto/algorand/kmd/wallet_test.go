@@ -30,6 +30,7 @@ func TestListWallets(t *testing.T) {
 	wallets, err := walletManager.List()
 	if err != nil {
 		t.Error("Failed to list walletManager", err)
+		return
 	}
 	t.Log(wallets)
 	// Verify that the number of wallets matches
@@ -68,6 +69,7 @@ func TestCreate(t *testing.T) {
 		containsWallet, err := walletManager.Contains(name)
 		if err != nil {
 			t.Error("Failed to list wallets", err)
+			return
 		}
 		if containsWallet {
 			t.Error("Wallet should not exist")
@@ -76,6 +78,7 @@ func TestCreate(t *testing.T) {
 		wallet, err := walletManager.Create(name, password)
 		if err != nil {
 			t.Error("Failed to create new wallet", err)
+			return
 		}
 		if wallet.Name != name {
 			t.Error("Wallet name does not match")
@@ -85,6 +88,7 @@ func TestCreate(t *testing.T) {
 		containsWallet, err = walletManager.Contains(name)
 		if err != nil {
 			t.Error("Failed to list wallets", err)
+			return
 		}
 		if !containsWallet {
 			t.Errorf("Wallet does not exist: %#v", wallet)
@@ -135,6 +139,7 @@ func TestCreate(t *testing.T) {
 		wallet, err := walletManager.Create("  "+name+"  ", password)
 		if err != nil {
 			t.Error("Failed to create new wallet", err)
+			return
 		}
 		if wallet.Name != name {
 			t.Error("Wallet name does not match")
@@ -142,6 +147,7 @@ func TestCreate(t *testing.T) {
 		wallets, err := walletManager.List()
 		if err != nil {
 			t.Error("Failed to list wallets", err)
+			return
 		}
 		func() {
 			for _, w := range wallets {
@@ -160,6 +166,7 @@ func TestCreate(t *testing.T) {
 		wallet, err := walletManager.Create(name, "  "+password+"  ")
 		if err != nil {
 			t.Error("Failed to create new wallet", err)
+			return
 		}
 		if wallet.Name != name {
 			t.Error("Wallet name does not match")
@@ -167,6 +174,7 @@ func TestCreate(t *testing.T) {
 		wallets, err := walletManager.List()
 		if err != nil {
 			t.Error("Failed to list wallets", err)
+			return
 		}
 		func() {
 			for _, w := range wallets {
@@ -190,10 +198,12 @@ func TestExportBackupPhrase(t *testing.T) {
 		_, err := walletManager.Create(name, password)
 		if err != nil {
 			t.Error("Failed to create new wallet", err)
+			return
 		}
 		backupPhrase, err := walletManager.ExportBackupPhrase(name, password)
 		if err != nil {
 			t.Error("Failed to export backup phrase", err)
+			return
 		}
 		t.Log("backup phrase: ", backupPhrase)
 	})
@@ -234,16 +244,19 @@ func TestRecover(t *testing.T) {
 	wallet1, err := walletManager.Create(name, password)
 	if err != nil {
 		t.Error("Failed to create new wallet", err)
+		return
 	}
 	backupPhrase, err := walletManager.ExportBackupPhrase(name, password)
 	if err != nil {
 		t.Error("Failed to export backup phrase", err)
+		return
 	}
 
 	wallet2Name := name + "-2"
 	wallet2, err := walletManager.Recover(wallet2Name, password, backupPhrase)
 	if err != nil {
 		t.Error("Failed to recover wallet", err)
+		return
 	}
 	if wallet2.Id == wallet1.Id {
 		t.Error("Recovered wallet should have a unique ID")
@@ -263,10 +276,12 @@ func TestCreateAccount(t *testing.T) {
 	_, err := walletManager.Create(name, password)
 	if err != nil {
 		t.Error("Failed to create new wallet", err)
+		return
 	}
 	accounts, err := walletManager.ListAccounts(name, password)
 	if err != nil {
 		t.Error("Failed to list wallet accounts", err)
+		return
 	}
 	if len(accounts) > 0 {
 		t.Error("Wallet should have no accounts")
@@ -275,12 +290,14 @@ func TestCreateAccount(t *testing.T) {
 	account, err := walletManager.CreateAccount(name, password)
 	if err != nil {
 		t.Error("Failed to create wallet account", err)
+		return
 	}
 	t.Log(account)
 
 	accounts, err = walletManager.ListAccounts(name, password)
 	if err != nil {
 		t.Error("Failed to list wallet accounts", err)
+		return
 	}
 	if len(accounts) != 1 {
 		t.Error("Wallet should have 1 account")
@@ -300,6 +317,7 @@ func TestCreateAccounts(t *testing.T) {
 	_, err := walletManager.Create(name, password)
 	if err != nil {
 		t.Error("Failed to create new wallet", err)
+		return
 	}
 
 	_, err = walletManager.CreateAccounts(name, password, 0)
@@ -311,6 +329,7 @@ func TestCreateAccounts(t *testing.T) {
 	addresses, err := walletManager.CreateAccounts(name, password, count)
 	if err != nil {
 		t.Error("Failed to create accounts", err)
+		return
 	}
 	t.Log(addresses)
 	if len(addresses) != int(count) {
@@ -328,17 +347,20 @@ func TestDeleteAccount(t *testing.T) {
 	_, err := walletManager.Create(name, password)
 	if err != nil {
 		t.Error("Failed to create new wallet", err)
+		return
 	}
 
 	t.Run("delete account that exists", func(t *testing.T) {
 		address, err := walletManager.CreateAccount(name, password)
 		if err != nil {
 			t.Error("Failed to create account", err)
+			return
 		}
 
 		accountExists, err := walletManager.ContainsAccount(name, password, address)
 		if err != nil {
 			t.Error("Error occurred while checking if account exists", err)
+			return
 		}
 		if !accountExists {
 			t.Error("Account should exist")
@@ -346,10 +368,12 @@ func TestDeleteAccount(t *testing.T) {
 
 		if err := walletManager.DeleteAccount(name, password, address); err != nil {
 			t.Error("Failed to delete account")
+			return
 		}
 		accountExists, err = walletManager.ContainsAccount(name, password, address)
 		if err != nil {
 			t.Error("Failed to check for account existence", err)
+			return
 		}
 		if accountExists {
 			t.Error("Account should not exist")
@@ -377,6 +401,7 @@ func TestDeleteAccounts(t *testing.T) {
 	_, err := walletManager.Create(name, password)
 	if err != nil {
 		t.Error("Failed to create new wallet", err)
+		return
 	}
 
 	t.Run("Delete accounts that exist", func(t *testing.T) {
@@ -386,12 +411,14 @@ func TestDeleteAccounts(t *testing.T) {
 			address, err := walletManager.CreateAccount(name, password)
 			if err != nil {
 				t.Error("Failed to create account", err)
+				return
 			}
 			accounts[i] = address
 		}
 		deleteErrors, err := walletManager.DeleteAccounts(name, password, accounts...)
 		if err != nil {
 			t.Error("Failed to delete accounts", err)
+			return
 		}
 		if len(deleteErrors) > 0 {
 			t.Error("There should no errors")
@@ -400,6 +427,7 @@ func TestDeleteAccounts(t *testing.T) {
 			exists, err := walletManager.ContainsAccount(name, password, account)
 			if err != nil {
 				t.Error("Failed to check for account existence", err)
+				return
 			}
 			if exists {
 				t.Error("account was not deleted", account)
@@ -420,6 +448,7 @@ func TestDeleteAccounts(t *testing.T) {
 		deleteErrors, err := walletManager.DeleteAccounts(name, password, accounts...)
 		if err != nil {
 			t.Error("Failed to delete accounts", err)
+			return
 		}
 		if len(deleteErrors) > 0 {
 			t.Error("There should no errors")
@@ -428,6 +457,7 @@ func TestDeleteAccounts(t *testing.T) {
 			exists, err := walletManager.ContainsAccount(name, password, account)
 			if err != nil {
 				t.Error("Failed to check for account existence", err)
+				return
 			}
 			if exists {
 				t.Error("account was not deleted", account)
@@ -446,9 +476,52 @@ func TestDeleteAccounts(t *testing.T) {
 		deleteErrors, err := walletManager.DeleteAccounts(name, password, accounts...)
 		if err != nil {
 			t.Error("Failed to delete accounts", err)
+			return
 		}
 		if len(deleteErrors) > 0 {
 			t.Error("There should no errors")
 		}
+	})
+}
+
+func TestExportPrivateKey(t *testing.T) {
+	kmdClient := test.LocalnetKMDClient(t)
+	walletManager := kmd.New(kmdClient)
+
+	name := ulid.Make().String()
+	password := ulid.Make().String()
+
+	_, err := walletManager.Create(name, password)
+	if err != nil {
+		t.Error("Failed to create new wallet", err)
+		return
+	}
+
+	t.Run("export key for account that exists", func(t *testing.T) {
+		address, err := walletManager.CreateAccount(name, password)
+		if err != nil {
+			t.Error("Failed to create account", err)
+			return
+		}
+		accountPassPhrase, err := walletManager.ExportPrivateKey(name, password, address)
+		if err != nil {
+			t.Error("Failed to export account private key", err)
+			return
+		}
+		t.Log(accountPassPhrase)
+		passPhraseWords := strings.Split(accountPassPhrase, " ")
+		if len(passPhraseWords) != 25 {
+			t.Error("account pass phrase mnemonic should consist of 25 words")
+		}
+	})
+
+	t.Run("export key for account that does not exist", func(t *testing.T) {
+		address := crypto.GenerateAccount().Address.String()
+		_, err := walletManager.ExportPrivateKey(name, password, address)
+		if err == nil {
+			t.Error("Exporting the private key for an account that does not exist should fail")
+			return
+		}
+		t.Log(err)
 	})
 }

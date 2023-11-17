@@ -5,6 +5,7 @@ import (
 	"github.com/algorand/go-algorand-sdk/v2/client/kmd"
 	"github.com/algorand/go-algorand-sdk/v2/mnemonic"
 	"github.com/algorand/go-algorand-sdk/v2/types"
+	log "github.com/sirupsen/logrus"
 	"strings"
 	"sync"
 )
@@ -67,6 +68,11 @@ type WalletManager interface {
 	// If there is no entry for the address in the returned map, then it means the account was successfully deleted.
 	// If all deletes completed successfully, then nil will be returned.
 	DeleteAccounts(name, password string, addresses ...string) (deleteErrors map[string]error, err error)
+
+	// ExportPrivateKey exports the account's private key in [mnemonic] form
+	//
+	// [mnemonic]: https://developer.algorand.org/docs/get-details/accounts/#transformation-private-key-to-25-word-mnemonic
+	ExportPrivateKey(name, password, address string) (passPhrase string, err error)
 }
 
 // KMD based implementation for WalletManager
@@ -184,15 +190,13 @@ func (walletManager *kmdWalletManager) ExportBackupPhrase(name, password string)
 		return "", err
 	}
 
-	handle, err := walletManager.walletHandle(name, password)
+	walletHandle, err := walletManager.walletHandle(name, password)
 	if err != nil {
 		return "", err
 	}
-	defer func() {
-		_, err = walletManager.kmdClient.ReleaseWalletHandle(handle)
-	}()
+	defer walletManager.releaseWalletHandle(name, walletHandle)
 
-	response, err := walletManager.kmdClient.ExportMasterDerivationKey(handle, password)
+	response, err := walletManager.kmdClient.ExportMasterDerivationKey(walletHandle, password)
 	if err != nil {
 		return "", err
 	}
@@ -245,9 +249,7 @@ func (walletManager *kmdWalletManager) ListAccounts(name, password string) (addr
 		return nil, err
 	}
 	walletHandle := walletHandleResponse.WalletHandleToken
-	defer func() {
-		_, err = walletManager.kmdClient.ReleaseWalletHandle(walletHandle)
-	}()
+	defer walletManager.releaseWalletHandle(name, walletHandle)
 
 	listKeysResponse, err := walletManager.kmdClient.ListKeys(walletHandle)
 	if err != nil {
@@ -279,9 +281,7 @@ func (walletManager *kmdWalletManager) CreateAccount(name, password string) (add
 	if err != nil {
 		return "", err
 	}
-	defer func() {
-		_, err = walletManager.kmdClient.ReleaseWalletHandle(walletHandle)
-	}()
+	defer walletManager.releaseWalletHandle(name, walletHandle)
 
 	response, err := walletManager.kmdClient.GenerateKey(walletHandle)
 	if err != nil {
@@ -304,9 +304,7 @@ func (walletManager *kmdWalletManager) CreateAccounts(name, password string, cou
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		_, err = walletManager.kmdClient.ReleaseWalletHandle(walletHandle)
-	}()
+	defer walletManager.releaseWalletHandle(name, walletHandle)
 
 	for i := 0; uint(i) < count; i++ {
 		response, err := walletManager.kmdClient.GenerateKey(walletHandle)
@@ -329,9 +327,7 @@ func (walletManager *kmdWalletManager) DeleteAccount(name, password, address str
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_, err = walletManager.kmdClient.ReleaseWalletHandle(walletHandle)
-	}()
+	defer walletManager.releaseWalletHandle(name, walletHandle)
 
 	_, err = walletManager.kmdClient.DeleteKey(walletHandle, password, address)
 	return err
@@ -351,9 +347,7 @@ func (walletManager *kmdWalletManager) DeleteAccounts(name, password string, add
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		_, err = walletManager.kmdClient.ReleaseWalletHandle(walletHandle)
-	}()
+	defer walletManager.releaseWalletHandle(name, walletHandle)
 
 	deleteErrors = make(map[string]error)
 	lock := sync.Mutex{}
@@ -378,4 +372,30 @@ func (walletManager *kmdWalletManager) DeleteAccounts(name, password string, add
 		return nil, nil
 	}
 	return
+}
+
+func (walletManager *kmdWalletManager) ExportPrivateKey(name, password, address string) (passPhrase string, err error) {
+	name, password, err = trimNamePassword(name, password)
+	if err != nil {
+		return "", err
+	}
+
+	walletHandle, err := walletManager.walletHandle(name, password)
+	if err != nil {
+		return "", err
+	}
+	defer walletManager.releaseWalletHandle(name, walletHandle)
+
+	response, err := walletManager.kmdClient.ExportKey(walletHandle, password, address)
+	if err != nil {
+		return "", err
+	}
+	return mnemonic.FromPrivateKey(response.PrivateKey)
+}
+
+func (walletManager *kmdWalletManager) releaseWalletHandle(walletName, walletHandle string) {
+	_, err := walletManager.kmdClient.ReleaseWalletHandle(walletHandle)
+	if err != nil {
+		log.Warning("Failed to release KMD handle for wallet:", walletName)
+	}
 }

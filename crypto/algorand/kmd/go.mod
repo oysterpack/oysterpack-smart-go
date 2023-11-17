@@ -11,7 +11,9 @@ require (
 	github.com/algorand/go-codec/codec v1.1.10 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/oklog/ulid/v2 v2.1.0 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	golang.org/x/crypto v0.15.0 // indirect
+	golang.org/x/sys v0.14.0 // indirect
 )
 
 replace github.com/oysterpack/oysterpack-smart-go/crypto/algorand/model => ../model
