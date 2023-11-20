@@ -16,8 +16,7 @@ func TestListWallets(t *testing.T) {
 	// Get list of wallets from the KMD service directly
 	kmdWallets, err := kmdClient.ListWallets()
 	if err != nil {
-		t.Log("Failed to list walletManager", err)
-		t.FailNow()
+		t.Fatal("Failed to list walletManager", err)
 	}
 	t.Logf("KMD Wallet count = %v", len(kmdWallets.Wallets))
 	for _, wallet := range kmdWallets.Wallets {

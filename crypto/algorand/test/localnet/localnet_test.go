@@ -9,8 +9,7 @@ import (
 func TestGetPrefundedTestAccounts(t *testing.T) {
 	accounts := GetPrefundedTestAccounts(t)
 	if len(accounts) == 0 {
-		t.Error("no accounts were returned")
-		t.FailNow()
+		t.Fatal("no accounts were returned")
 	}
 	// accounts should be sorted by ALGO balance desc
 	var prevAccount *models.Account
