@@ -5,6 +5,7 @@ test:
 	cd crypto/algorand/test/localnet && go test
 
 format:
+	cd crypto/algorand/algod && go fmt
 	cd crypto/algorand/kmd && go fmt
 	cd crypto/algorand/test/localnet && go fmt
 	cd crypto/algorand/transaction && go fmt
