@@ -15,14 +15,14 @@ func TestNewULID(t *testing.T) {
 	defer func() {
 		_ = logger.Sync()
 	}()
-	ulidFactory := NewUlidFactory(logger)
+	newULID := NewULIDGenerator(logger)
 
 	// Generate 10000 ULIDs and ensure they are all unique
 	ulids := make(map[ulid.ULID]bool)
 	const count = 10000
 	var prevTime uint64 = 0
 	for i := 0; i < count; i++ {
-		id := ulidFactory.NewULID()
+		id := newULID()
 		_, ok := ulids[id]
 		if ok {
 			t.Fatal("duplicate ULID was generated at iteration ", i+1)
