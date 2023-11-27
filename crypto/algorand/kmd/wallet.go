@@ -5,7 +5,7 @@ import (
 	"github.com/algorand/go-algorand-sdk/v2/client/kmd"
 	"github.com/algorand/go-algorand-sdk/v2/mnemonic"
 	"github.com/algorand/go-algorand-sdk/v2/types"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"strings"
 	"sync"
 )
@@ -396,6 +396,6 @@ func (walletManager *kmdWalletManager) ExportPrivateKey(name, password, address 
 func (walletManager *kmdWalletManager) releaseWalletHandle(walletName, walletHandle string) {
 	_, err := walletManager.kmdClient.ReleaseWalletHandle(walletHandle)
 	if err != nil {
-		log.Warning("Failed to release KMD handle for wallet:", walletName)
+		slog.Warn("Failed to release KMD handle", "wallet", walletName)
 	}
 }
