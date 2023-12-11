@@ -7,8 +7,8 @@ import (
 )
 
 // NewFx constructs a new Fx application using the specified loggerConstructor and options
-// - the same Zap logger will be used for Fx's own logs as well
-func NewFx(loggerConstructor LoggerConstructor, options ...fx.Option) *fx.App {
+// - the same Zap logger will be used for Fx logs as well
+func NewFx(loggerConstructor LoggerProvider, options ...fx.Option) *fx.App {
 	return fx.New(
 		fx.WithLogger(func(log *zap.Logger) fxevent.Logger {
 			return &fxevent.ZapLogger{Logger: log}
@@ -18,9 +18,9 @@ func NewFx(loggerConstructor LoggerConstructor, options ...fx.Option) *fx.App {
 	)
 }
 
-type LoggerConstructor func() (*zap.Logger, error)
+type LoggerProvider func() (*zap.Logger, error)
 
-// DevLogger is a LoggerConstructor, which is meant to be used for development purposes.
+// DevLogger is a LoggerProvider, which is meant to be used for development purposes.
 // It logs at DebugLevel.
 func DevLogger() (*zap.Logger, error) {
 	return zap.NewDevelopment()

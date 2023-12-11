@@ -3,6 +3,7 @@ package localnet
 import (
 	"context"
 	"github.com/algorand/go-algorand-sdk/v2/client/v2/common/models"
+	"github.com/algorand/go-algorand-sdk/v2/types"
 	"testing"
 )
 
@@ -37,5 +38,17 @@ func TestIndexerClient(t *testing.T) {
 		}
 		t.Log(validRound, account.Address, account.Amount)
 	}
+}
 
+func TestGenerateTestAccount(t *testing.T) {
+	amount := types.ToMicroAlgos(0.1)
+	acct := GenerateTestAccount(t, amount)
+	algodClient := AlgodClient(t)
+	acctInfo, err := algodClient.AccountInformation(acct.Address.String()).Do(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if acctInfo.Amount != uint64(amount) {
+		t.Errorf("Account ALGO balance does not match: expected = %v actual = %v", amount, acctInfo.Amount)
+	}
 }

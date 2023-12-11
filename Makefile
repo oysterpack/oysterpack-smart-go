@@ -1,17 +1,18 @@
-pre-commit: format localnet-reset test
+pre-commit: format lint localnet-reset test
 
 test:
-	cd crypto/algorand/kmd && go test
-	cd crypto/algorand/test/localnet && go test
+	cd fxapp && go test
 
 format:
-	cd crypto/algorand/algod && go fmt
-	cd crypto/algorand/kmd && go fmt
-	cd crypto/algorand/test/localnet && go fmt
-	cd crypto/algorand/transaction && go fmt
+	cd fxapp && go fmt
 
 godoc:
 	cd crypto/algorand && godoc -http :6060 -index
+
+# runs go vet and staticcheck lint tools on all module packages
+lint:
+	cd fxapp && go vet ./...
+	cd fxapp && staticcheck ./...
 
 # algorand node commands depend on the $ALGORAND_DATA env var
 # if not set, then it defaults to /var/lib/algorand
@@ -27,5 +28,6 @@ kmd-start: check_algorand_data_env_var
 kmd-stop: check_algorand_data_env_var
 	sudo -u algorand goal -d $(ALGORAND_DATA) kmd stop
 
+# resets the local Algorand environment provided by AlgoKit
 localnet-reset:
-	algokit localnet reset
+	algokit localnet reset --update

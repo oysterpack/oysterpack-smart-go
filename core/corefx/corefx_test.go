@@ -9,7 +9,7 @@ import (
 )
 
 func TestNewFx(t *testing.T) {
-	test := func(loggerConstructor LoggerConstructor) func(t *testing.T) {
+	test := func(loggerConstructor LoggerProvider) func(t *testing.T) {
 		return func(t *testing.T) {
 			app := NewFx(
 				loggerConstructor,                 // *zap.Logger

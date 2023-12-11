@@ -2,9 +2,12 @@ package kmd
 
 import (
 	"errors"
+	"fmt"
 	"github.com/algorand/go-algorand-sdk/v2/client/kmd"
 	"github.com/algorand/go-algorand-sdk/v2/mnemonic"
 	"github.com/algorand/go-algorand-sdk/v2/types"
+	"github.com/oklog/ulid/v2"
+	"github.com/oysterpack/oysterpack-smart-go/core"
 	"log/slog"
 	"strings"
 	"sync"
@@ -15,6 +18,66 @@ const walletDriverName = "sqlite"
 type Wallet struct {
 	Id   string
 	Name string
+}
+
+// ListWallets lists the wallets that are being managed
+type ListWallets func() ([]Wallet, error)
+
+// GetWallet returns the Wallet for the specified name
+//
+// If the wallet is not found, then a
+type GetWallet func(name string) (Wallet, error)
+
+var (
+	ErrListWallets    = ulid.MustParse("01HGBTZV8B9RAPX0KPBNZ5JJNR")
+	ErrWalletNotFound = ulid.MustParse("01HGBTZV8B9RAPX0KPBNZ5JJNR")
+)
+
+func errListWallets(cause error) core.Error {
+	return core.Error{
+		ID:    ErrListWallets,
+		Name:  "ErrListWallets",
+		Err:   errors.New("failed to list wallets"),
+		Cause: cause,
+	}
+}
+
+func errWalletNotFound(walletName string) core.Error {
+	return core.Error{
+		ID:   ErrWalletNotFound,
+		Name: "ErrWalletNotFound",
+		Err:  errors.New(fmt.Sprintf("wallet not found: %s", walletName)),
+	}
+}
+
+func ProvideListWallets(kmdClient *kmd.Client) ListWallets {
+	return func() ([]Wallet, error) {
+		kmdWallets, err := kmdClient.ListWallets()
+		if err != nil {
+			return nil, errListWallets(err)
+		}
+		wallets := make([]Wallet, len(kmdWallets.Wallets))
+		for i, wallet := range kmdWallets.Wallets {
+			wallets[i] = Wallet{wallet.ID, wallet.Name}
+		}
+
+		return wallets, nil
+	}
+}
+
+func ProvideGetWallet(listWallets ListWallets) GetWallet {
+	return func(name string) (Wallet, error) {
+		wallets, err := listWallets()
+		if err != nil {
+			return Wallet{}, err
+		}
+		for _, wallet := range wallets {
+			if wallet.Name == name {
+				return wallet, nil
+			}
+		}
+		return Wallet{}, errWalletNotFound(name)
+	}
 }
 
 // WalletManager
