@@ -1,6 +1,11 @@
-package core
+package fxulid_test
 
 import (
+	"context"
+	"github.com/oysterpack/oysterpack-smart-go/fxapp"
+	"github.com/oysterpack/oysterpack-smart-go/fxulid"
+	"go.uber.org/fx"
+
 	"github.com/oklog/ulid/v2"
 	"go.uber.org/zap"
 	"testing"
@@ -15,7 +20,7 @@ func TestNewULID(t *testing.T) {
 	defer func() {
 		_ = logger.Sync()
 	}()
-	newULID := NewULIDGenerator(logger)
+	newULID := fxulid.MakeNewULIDFunction(logger)
 
 	// Generate 10000 ULIDs and ensure they are all unique
 	ulids := make(map[ulid.ULID]bool)
@@ -39,4 +44,30 @@ func TestNewULID(t *testing.T) {
 	if len(ulids) != count {
 		t.Fatal("The number of generated ULIDs does not match the expected value", len(ulids), "!=", count)
 	}
+}
+
+func newAppLogger() (*zap.Logger, error) {
+	return zap.NewDevelopment()
+}
+
+func TestMakeNewULIDFunction_WithFxApp(t *testing.T) {
+	app := fxapp.New(
+		fx.Provide(
+			newAppLogger,
+			fxulid.MakeNewULIDFunction,
+		),
+		fx.Invoke(func(newUlid fxulid.NewULID, log *zap.Logger) {
+			log.Info("newULID()", zap.Any("ulid", newUlid()))
+		}),
+	)
+
+	if err := app.Start(context.Background()); err != nil {
+		panic(err)
+	}
+	defer func(app *fx.App, ctx context.Context) {
+		err := app.Stop(ctx)
+		if err != nil {
+			t.Error(err)
+		}
+	}(app, context.Background())
 }

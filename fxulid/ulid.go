@@ -1,4 +1,4 @@
-package core
+package fxulid
 
 import (
 	"crypto/rand"
@@ -7,16 +7,16 @@ import (
 	"time"
 )
 
-// ULIDGenerator generates new [ULID]s
+// NewULID generates new [ULID]s
 //
 // [ULID] = https://github.com/ulid/spec
-type ULIDGenerator func() ulid.ULID
+type NewULID func() ulid.ULID
 
-// NewULIDGenerator is a ULIDGenerator constructor function
+// MakeNewULIDFunction is a NewULID constructor function
 //
-// The returned NewULIDGenerator generates new ULIDs using a cryptographically secure source of entropy.
+// The returned NewULID function generates new ULIDs using a cryptographically secure source of entropy.
 // If ULID generation fails, then the error will be logged and ULID generation will fall back to ulid.Make().
-func NewULIDGenerator(logger *zap.Logger) ULIDGenerator {
+func MakeNewULIDFunction(logger *zap.Logger) NewULID {
 	return func() ulid.ULID {
 		id, err := ulid.New(ulid.Timestamp(time.Now()), rand.Reader)
 		if err != nil {
